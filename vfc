@@ -1,0 +1,6 @@
+path,type,content
+/,dir,
+/home,dir,
+/home/readme.txt,file,SGVsbG8sIFdvcmxkIQ==
+/docs,dir,
+/docs/manual.txt,file,UmVhZCB0aGlzIGZpcnN0IQ==
