@@ -2,6 +2,7 @@ package Konfig;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Base64;
 
@@ -36,7 +37,6 @@ public class ShellEmulator {
         runInteractiveMode();
     }
 
-    // === Настройка и конфигурация ===
     private void askUserForPaths() {
         System.out.println("=== Настройка эмулятора ===");
         System.out.print("Введите путь к виртуальной файловой системе (VFS .csv): ");
@@ -88,7 +88,7 @@ public class ShellEmulator {
                 String[] parts = line.split(",", 3);
                 if (parts.length < 2) continue;
 
-                String filePath = parts[0].trim().replace("\\", "/"); // исправление под Windows
+                String filePath = parts[0].trim().replace("\\", "/");
                 String type = parts[1].trim();
                 String content = (parts.length == 3) ? parts[2] : "";
 
@@ -157,7 +157,6 @@ public class ShellEmulator {
         return dir;
     }
 
-    // === REPL и команды ===
     private void runInteractiveMode() {
         System.out.println("Интерактивный режим. Введите 'exit' для выхода.\n");
         while (true) {
@@ -170,7 +169,7 @@ public class ShellEmulator {
 
     private boolean processCommand(String input) {
         List<String> tokens = parseInput(input);
-        String command = tokens.getFirst();
+        String command = tokens.get(0);
         List<String> args = tokens.subList(1, tokens.size());
 
         switch (command) {
@@ -180,6 +179,9 @@ public class ShellEmulator {
             }
             case "ls" -> commandLs();
             case "cd" -> commandCd(args);
+            case "head" -> commandHead(args);
+            case "du" -> commandDu(args);
+            case "uname" -> commandUname();
             default -> System.out.println("Ошибка: неизвестная команда '" + command + "'");
         }
         return false;
@@ -223,6 +225,71 @@ public class ShellEmulator {
 
         if (target != null) currentDir = target;
         else System.out.println("Ошибка: каталог '" + path + "' не найден.");
+    }
+
+    private void commandHead(List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Ошибка: не указан файл.");
+            return;
+        }
+
+        String filename = args.get(0);
+        int linesToShow = 10; // по умолчанию
+
+        if (args.size() >= 2) {
+            try {
+                linesToShow = Integer.parseInt(args.get(1));
+            } catch (NumberFormatException e) {
+                System.out.println("Ошибка: неверное значение количества строк.");
+                return;
+            }
+        }
+
+        VFile file = currentDir.files.get(filename);
+        if (file == null) {
+            System.out.println("Ошибка: файл '" + filename + "' не найден.");
+            return;
+        }
+
+        String[] lines = file.content.split("\\R");
+        for (int i = 0; i < Math.min(linesToShow, lines.length); i++) {
+            System.out.println(lines[i]);
+        }
+    }
+
+    private void commandDu(List<String> args) {
+        String path = args.isEmpty() ? "." : args.getFirst();
+        if (path.equals("."))
+            System.out.println(currentDir.getPath() + ": " + getDirSize(currentDir) + " байт");
+        else {
+            VDirectory dir = navigateToDirectory(currentDir.getPath() + "/" + path);
+            VFile file = currentDir.files.get(path);
+            if (dir != null)
+                System.out.println(dir.getPath() + ": " + getDirSize(dir) + " байт");
+            else if (file != null)
+                System.out.println(file.name + ": " + file.content.length() + " байт");
+            else
+                System.out.println("Ошибка: путь '" + path + "' не найден.");
+        }
+    }
+
+    private int getDirSize(VDirectory dir) {
+        int sum = 0;
+        for (VFile f : dir.files.values()) sum += f.content.length();
+        for (VDirectory d : dir.subdirs.values()) sum += getDirSize(d);
+        return sum;
+    }
+
+    private void commandUname() {
+        String os = System.getProperty("os.name");
+        String javaVersion = System.getProperty("java.version");
+        String time = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
+        System.out.println("Эмулятор: ShellEmulator v4");
+        System.out.println("Пользователь: " + username);
+        System.out.println("Хост: " + hostname);
+        System.out.println("ОС: " + os);
+        System.out.println("Java: " + javaVersion);
+        System.out.println("Дата: " + time);
     }
 
     static class VDirectory {

@@ -1,6 +1,6 @@
 path,type,content
 /,dir,
 /home,dir,
-/home/readme.txt,file,SGVsbG8sIFdvcmxkIQ==
+/home/info.txt,file,MS4gSGVsbG8hCjIuIEhvdyd5b3UhCjMuIEdvb2RieWUhCjQuIFRoaXMgaXMgdGVzdC4K
 /docs,dir,
-/docs/manual.txt,file,UmVhZCB0aGlzIGZpcnN0IQ==
+/docs/readme.txt,file,RG9jdW1lbnRzIGNvbnRlbnQKQWxsIHNhdmVkIGhlcmUu

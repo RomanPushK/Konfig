@@ -1,0 +1,19 @@
+ls
+cd home
+ls
+head info.txt
+head info.txt 3
+head unknown.txt
+du
+du info.txt
+cd ..
+du docs
+uname
+cd nowhere
+cd docs
+ls
+head readme.txt 2
+du
+cd /
+ls
+exit
