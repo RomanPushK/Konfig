@@ -37,7 +37,7 @@ public class ShellEmulator {
     }
 
     private void askUserForPaths() {
-        System.out.println("=== Настройка эмулятора ===");
+        System.out.println("Настройка эмулятора");
         System.out.print("Введите путь к виртуальной файловой системе (VFS .csv): ");
         vfsPath = scanner.nextLine().trim();
         if (vfsPath.isEmpty()) vfsPath = "(не задан)";
@@ -54,12 +54,12 @@ public class ShellEmulator {
     }
 
     private void printDebugInfo() {
-        System.out.println("=== Конфигурация эмулятора ===");
+        System.out.println("Конфигурация эмулятора");
         System.out.println("Пользователь: " + currentUser);
         System.out.println("Имя хоста: " + hostname);
         System.out.println("Путь к VFS: " + vfsPath);
         System.out.println("Путь к стартовому скрипту: " + scriptPath);
-        System.out.println("===============================\n");
+        System.out.println("\n");
     }
 
     private void loadVFS(String path) {
@@ -313,7 +313,7 @@ public class ShellEmulator {
         String os = System.getProperty("os.name");
         String javaVersion = System.getProperty("java.version");
         String time = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
-        System.out.println("Эмулятор: ShellEmulator v4");
+        System.out.println("Эмулятор: ShellEmulator");
         System.out.println("Пользователь: " + currentUser);
         System.out.println("Роль пользователя: " + ((currentUser.equals("Roman")) ? "admin" : "other"));
         System.out.println("Хост: " + hostname);
@@ -412,7 +412,7 @@ public class ShellEmulator {
     }
 
     private void executeStartupScript(String path) {
-        System.out.println("=== Выполнение стартового скрипта: " + path + " ===");
+        System.out.println("Выполнение стартового скрипта: " + path);
         File file = new File(path);
         if (!file.exists() || !file.isFile()) {
             System.out.println("Ошибка: файл скрипта не найден или не является файлом.");
@@ -432,6 +432,6 @@ public class ShellEmulator {
             System.out.println("Ошибка при чтении скрипта: " + e.getMessage());
         }
 
-        System.out.println("=== Завершено выполнение скрипта ===\n");
+        System.out.println("Завершено выполнение скрипта\n");
     }
 }
