@@ -1,6 +1,15 @@
 path,type,content
 /,dir,
 /home,dir,
-/home/info.txt,file,MS4gSGVsbG8hCjIuIEhvdyd5b3UhCjMuIEdvb2RieWUhCjQuIFRoaXMgaXMgdGVzdC4K
+/home/user1,dir,
+/home/user1/info.txt,file,VGhpcyBpcyBVc2VyMSBwZXJzb25hbCBmaWxlLgpIaXMgZGF0YSBpcyBjb25maWRlbnRpYWwuCg==
+/home/user1/secret.txt,file,U2VjcmV0IGZpbGUuIE9ubHkgVXNlcjEgc2hvdWxkIHJlYWQgdGhpcy4K
+/home/user2,dir,
+/home/user2/notes.txt,file,VGhpcyBpcyBVc2VyMiBwZXJzb25hbCBmaWxlLg==
+/home/user2/drafts.txt,file,V2hhdCB0byB3cml0ZSBoZXJlPw==
+/home/music.txt,file,QWRvLCBLZXNzb2t1LCBTM1JMLArQodC10YDQtdCz0LAg0J/QuNGA0LDRgiwgQi1Lb21hY2hp
 /docs,dir,
-/docs/readme.txt,file,RG9jdW1lbnRzIGNvbnRlbnQKQWxsIHNhdmVkIGhlcmUu
+/docs/manual.txt,file,UmVhZCB0aGlzIGRvY3VtZW50IHRvIHVuZGVyc3RhbmQgaG93IHRoZSBlbXVsYXRvciB3b3Jrcy4K
+/docs/setup.txt,file,SW5zdHJ1Y3Rpb25zIGZvciBzZXR0aW5nIHVwIHlvdXIgZW52aXJvbm1lbnQuCkVuZCBvZiBmaWxlLgo=
+/tmp,dir,
+/tmp/test.sh,file,ZXhvIHBsYWluIHNjcmlwdCBoZXJlLgo=

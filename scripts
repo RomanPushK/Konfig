@@ -1,19 +1,27 @@
 ls
+ls -l
 cd home
-ls
+cd user1
+pwd
+ls -l
 head info.txt
-head info.txt 3
-head unknown.txt
+head secret.txt 2
+chmod secret.txt 700
+ls -l
+su User2
+head /home/user1/secret.txt
+head /home/user2/notes.txt 2
 du
-du info.txt
-cd ..
-du docs
 uname
-cd nowhere
-cd docs
-ls
-head readme.txt 2
-du
+su Roman
+uname
 cd /
+cd docs
+head manual.txt
+head setup.txt 1
+cd ..
+cd tmp
 ls
-exit
+head test.sh
+chmod test.sh 777
+ls -l

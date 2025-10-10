@@ -9,7 +9,7 @@ import java.util.Base64;
 public class ShellEmulator {
     private final Scanner scanner = new Scanner(System.in);
 
-    private String username;
+    private String currentUser = "Roman";
     private String hostname;
     private String vfsPath = "(не задан)";
     private String scriptPath = "(не задан)";
@@ -21,7 +21,6 @@ public class ShellEmulator {
     }
 
     private void start(String[] args) {
-        username = System.getProperty("user.name", "user");
         hostname = getHostName();
 
         if (args.length == 0) askUserForPaths();
@@ -56,7 +55,7 @@ public class ShellEmulator {
 
     private void printDebugInfo() {
         System.out.println("=== Конфигурация эмулятора ===");
-        System.out.println("Пользователь: " + username);
+        System.out.println("Пользователь: " + currentUser);
         System.out.println("Имя хоста: " + hostname);
         System.out.println("Путь к VFS: " + vfsPath);
         System.out.println("Путь к стартовому скрипту: " + scriptPath);
@@ -141,7 +140,7 @@ public class ShellEmulator {
             createDirectory(dirPath);
             dir = navigateToDirectory(dirPath);
         }
-        if (dir != null) dir.files.put(fileName, new VFile(fileName, content));
+        if (dir != null) dir.files.put(fileName, new VFile(fileName, content, currentUser));
     }
 
     private VDirectory navigateToDirectory(String path) {
@@ -160,7 +159,7 @@ public class ShellEmulator {
     private void runInteractiveMode() {
         System.out.println("Интерактивный режим. Введите 'exit' для выхода.\n");
         while (true) {
-            System.out.print(username + "@" + hostname + ":" + currentDir.getPath() + "$ ");
+            System.out.print(currentUser + "@" + hostname + ":" + currentDir.getPath() + "$ ");
             String input = scanner.nextLine().trim();
             if (input.isEmpty()) continue;
             if (processCommand(input)) break;
@@ -169,7 +168,7 @@ public class ShellEmulator {
 
     private boolean processCommand(String input) {
         List<String> tokens = parseInput(input);
-        String command = tokens.get(0);
+        String command = tokens.getFirst();
         List<String> args = tokens.subList(1, tokens.size());
 
         switch (command) {
@@ -177,11 +176,13 @@ public class ShellEmulator {
                 System.out.println("Выход из эмулятора...");
                 return true;
             }
-            case "ls" -> commandLs();
+            case "ls" -> commandLs(args);
             case "cd" -> commandCd(args);
             case "head" -> commandHead(args);
             case "du" -> commandDu(args);
             case "uname" -> commandUname();
+            case "su" -> commandSu(args);
+            case "chmod" -> commandChmod(args);
             default -> System.out.println("Ошибка: неизвестная команда '" + command + "'");
         }
         return false;
@@ -192,14 +193,32 @@ public class ShellEmulator {
         return new ArrayList<>(Arrays.asList(parts));
     }
 
-    private void commandLs() {
+    private void commandLs(List<String> args) {
+        boolean showPermission = args.contains("-l");
         System.out.println("Содержимое каталога " + currentDir.getPath() + ":");
         if (currentDir.subdirs.isEmpty() && currentDir.files.isEmpty()) {
             System.out.println("(пусто)");
         } else {
             for (String name : currentDir.subdirs.keySet()) System.out.println("[dir]  " + name);
-            for (String name : currentDir.files.keySet()) System.out.println("[file] " + name);
+            if (showPermission) {
+                for (String name : currentDir.files.keySet()) {
+                    VFile file = currentDir.files.get(name);
+                    System.out.println("[file] " + name + " owner: " + file.owner + " permissions: " + formatPermissions(file.permissions));
+                }
+            } else {
+                for (String name : currentDir.files.keySet()) System.out.println("[file] " + name);
+            }
         }
+    }
+
+    private String formatPermissions(int[] permissions) {
+        return (formPermission(permissions[0]) + formPermission(permissions[1]) + formPermission(permissions[2]));
+    }
+
+    private String formPermission(int permission) {
+        return ((permission & 4) != 0 ? "r" : "-") +
+                ((permission & 2) != 0 ? "w" : "-") +
+                ((permission & 1) != 0 ? "x" : "-");
     }
 
     private void commandCd(List<String> args) {
@@ -233,7 +252,7 @@ public class ShellEmulator {
             return;
         }
 
-        String filename = args.get(0);
+        String path = args.get(0);
         int linesToShow = 10; // по умолчанию
 
         if (args.size() >= 2) {
@@ -244,17 +263,27 @@ public class ShellEmulator {
                 return;
             }
         }
-
-        VFile file = currentDir.files.get(filename);
+        VFile file;
+        if (path.contains("/")) {
+            VDirectory dir = navigateToDirectory(path.substring(0, path.lastIndexOf("/")));
+            if (dir == null) {
+                System.out.println("Ошибка: путь '" + path + "' не найден.");
+                return;
+            }
+            file = dir.files.get(path.substring(path.lastIndexOf("/") + 1));
+        } else file = currentDir.files.get(path);
         if (file == null) {
-            System.out.println("Ошибка: файл '" + filename + "' не найден.");
+            System.out.println("Ошибка: файл '" + path + "' не найден.");
             return;
         }
-
-        String[] lines = file.content.split("\\R");
-        for (int i = 0; i < Math.min(linesToShow, lines.length); i++) {
-            System.out.println(lines[i]);
+        if ((currentUser.equals(file.owner) && file.permissions[0] >= 4) ||
+                (!currentUser.equals(file.owner) && file.permissions[2] >= 4)) {
+            String[] lines = file.content.split("\\R");
+            for (int i = 0; i < Math.min(linesToShow, lines.length); i++) {
+                System.out.println(lines[i]);
+            }
         }
+        else System.out.println("Ошибка: нет прав на чтение файла.");
     }
 
     private void commandDu(List<String> args) {
@@ -285,11 +314,62 @@ public class ShellEmulator {
         String javaVersion = System.getProperty("java.version");
         String time = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
         System.out.println("Эмулятор: ShellEmulator v4");
-        System.out.println("Пользователь: " + username);
+        System.out.println("Пользователь: " + currentUser);
+        System.out.println("Роль пользователя: " + ((currentUser.equals("Roman")) ? "admin" : "other"));
         System.out.println("Хост: " + hostname);
         System.out.println("ОС: " + os);
         System.out.println("Java: " + javaVersion);
         System.out.println("Дата: " + time);
+    }
+
+    private void commandSu(List<String> args) {
+        if (args.isEmpty()) {
+            System.out.println("Ошибка: пользователь не указан.");
+            return;
+        }
+        currentUser = args.getFirst();
+    }
+
+    private void commandChmod(List<String> args) {
+        if (args.size() < 2) {
+            System.out.println("Ошибка: не указан файл или разрешения для файла.");
+            return;
+        }
+        String permissions = args.get(1);
+        try {
+            Integer.parseInt(permissions);
+        } catch (NumberFormatException err) {
+            System.out.println("Ошибка: разрешения должны содержать только цифры.");
+            return;
+        }
+
+        if (permissions.length() != 3) {
+            System.out.println("Ошибка: разрешения должны быть из 3 цифр.");
+            return;
+        }
+
+        VFile file;
+        String path = args.getFirst();
+        if (path.contains("/")) {
+            VDirectory dir = navigateToDirectory(path.substring(0, path.lastIndexOf("/")));
+            if (dir == null) {
+                System.out.println("Ошибка: путь '" + path + "' не найден.");
+                return;
+            }
+            file = dir.files.get(path.substring(path.lastIndexOf("/") + 1));
+        } else file = currentDir.files.get(path);
+
+        if (file != null) {
+            for (int i = 0; i < 3; i++) {
+                if ((int) permissions.charAt(i) - 48 < 0 || (int) permissions.charAt(i) - 48 > 7) {
+                    System.out.println("Ошибка: разрешения могут быть от 0 до 7.");
+                    file.permissions = new int[]{7, 4, 4};
+                }
+                file.permissions[i] = (int) permissions.charAt(i) - 48;
+            }
+        } else {
+            System.out.println("Ошибка: путь '" + path + "' не найден.");
+        }
     }
 
     static class VDirectory {
@@ -313,10 +393,13 @@ public class ShellEmulator {
     static class VFile {
         String name;
         String content;
+        String owner;
+        int[] permissions = {7, 4, 4};
 
-        VFile(String name, String content) {
+        VFile(String name, String content, String owner) {
             this.name = name;
             this.content = content;
+            this.owner = owner;
         }
     }
 
@@ -341,8 +424,9 @@ public class ShellEmulator {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("#")) continue;
-                System.out.println(username + "@" + hostname + ":" + currentDir.getPath() + "$ " + line);
+                System.out.println(currentUser + "@" + hostname + ":" + currentDir.getPath() + "$ " + line);
                 processCommand(line);
+                System.out.println();
             }
         } catch (IOException e) {
             System.out.println("Ошибка при чтении скрипта: " + e.getMessage());
